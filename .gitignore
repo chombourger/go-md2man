@@ -1,2 +1,4 @@
+*.src.rpm
+build
 go-md2man
 bin

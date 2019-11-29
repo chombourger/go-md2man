@@ -1,0 +1,80 @@
+
+%global debug_package   %{nil}
+
+%global provider github
+%global provider_tld com
+%global project cpuguy83
+%global repo go-md2man
+%global provider_prefix %{provider}.%{provider_tld}/%{project}/%{repo}
+%global import_path %{provider_prefix}
+%global git0 https://%{provider}.%{provider_tld}/%{project}/%{repo}
+%global commit0 #COMMIT#
+%global shortcommit0 %(c=%{commit0}; echo ${c:0:8})
+
+Name:    go-md2man
+Version: 1.0.10
+Release: #COMMITDATE#.git%{shortcommit0}%{?dist}
+Summary: Process markdown into manpages
+License: MIT
+URL:     https://%{import_path}
+Source0: %{git0}/archive/%{commit0}/%{repo}-%{shortcommit0}.tar.gz
+
+%description
+%{repo} is a golang tool using blackfriday to process markdown into
+manpages.
+
+%package devel
+BuildRequires:  golang-bin
+BuildArch:      noarch
+Summary:        A golang registry for global request variables
+Provides:       golang(%{import_path}) = %{version}-%{release}
+Provides:       golang(%{import_path}/mangen) = %{version}-%{release}
+
+%description devel
+%{repo} is a golang tool using blackfriday to process markdown into
+manpages.
+
+This package contains library source intended for building other packages
+which use %{project}/%{repo}.
+
+%prep
+%setup -qn %{repo}-%{shortcommit0}
+
+%build
+mkdir _build
+pushd _build
+mkdir -p src/%{provider}.%{provider_tld}/%{project}
+ln -s ../../../../ src/%{import_path}
+popd
+ln -s vendor src
+export GOPATH=$(pwd)/_build:$(pwd):$(pwd):%{gopath}
+make
+
+%install
+install -d -p %{buildroot}%{gopath}/src/%{import_path}
+cp -pav *.go %{buildroot}%{gopath}/src/%{import_path}/
+
+# install go-md2man binary
+install -d %{buildroot}%{_bindir}
+install -p -m 755 ./bin/%{repo} %{buildroot}%{_bindir}
+
+# fix perms
+find . -exec chmod u+w {} \+
+
+%check
+# no tests
+
+%files
+%doc README.md
+%{_bindir}/%{repo}
+
+%files devel
+%doc README.md
+%dir %{gopath}/src/%{provider}.%{provider_tld}/%{project}
+%dir %{gopath}/src/%{import_path}
+%{gopath}/src/%{import_path}/*.go
+
+%changelog
+* Fri Nov 29 2019 Cedric Hombourger <chombourger@gmail.com>
+- Package upstream version 1.0.10
+
